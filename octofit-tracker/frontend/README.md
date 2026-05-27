@@ -71,3 +71,20 @@ export default defineConfig([
   },
 ])
 ```
+
+## Quick Start
+
+Run the frontend dev server on port 5173:
+
+```bash
+cd octofit-tracker/frontend
+npm install
+npm run dev
+```
+
+Preview build on port 5173:
+
+```bash
+npm run preview
+```
+

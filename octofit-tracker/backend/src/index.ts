@@ -9,12 +9,25 @@ app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-mongoose.connect(MONGO_URI)
-  .then(() => {
+const connectWithRetry = async (retries = 5, delay = 2000) => {
+  try {
+    await mongoose.connect(MONGO_URI);
     console.log("Connected to MongoDB");
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch(err => {
-    console.error("MongoDB connection error:", err);
-    process.exit(1);
-  });
+
+    mongoose.connection.on("disconnected", () => {
+      console.warn("MongoDB disconnected. Attempting to reconnect...");
+      connectWithRetry();
+    });
+  } catch (err) {
+    console.error(`MongoDB connection error: ${err}. Retries left: ${retries - 1}`);
+    if (retries > 1) {
+      setTimeout(() => connectWithRetry(retries - 1, delay * 2), delay);
+    } else {
+      console.error("Could not connect to MongoDB after retries. Starting server without DB connection.");
+      app.listen(PORT, () => console.log(`Server running on port ${PORT} (no DB)`));
+    }
+  }
+};
+
+connectWithRetry();
